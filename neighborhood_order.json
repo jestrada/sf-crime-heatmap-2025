@@ -1,43 +1,289 @@
 [
-  {"rank": 1, "neighborhood": "South of Market", "lat": 37.7791, "lon": -122.4076, "dist_km": 0},
-  {"rank": 2, "neighborhood": "Tenderloin", "lat": 37.7839, "lon": -122.4145, "dist_km": 0.81},
-  {"rank": 3, "neighborhood": "Nob Hill", "lat": 37.7900, "lon": -122.4161, "dist_km": 0.69},
-  {"rank": 4, "neighborhood": "Chinatown", "lat": 37.7965, "lon": -122.4072, "dist_km": 1.06},
-  {"rank": 5, "neighborhood": "North Beach", "lat": 37.8036, "lon": -122.4103, "dist_km": 0.84},
-  {"rank": 6, "neighborhood": "Russian Hill", "lat": 37.8000, "lon": -122.4204, "dist_km": 0.97},
-  {"rank": 7, "neighborhood": "Marina", "lat": 37.8002, "lon": -122.4357, "dist_km": 1.35},
-  {"rank": 8, "neighborhood": "Pacific Heights", "lat": 37.7904, "lon": -122.4323, "dist_km": 1.13},
-  {"rank": 9, "neighborhood": "Japantown", "lat": 37.7852, "lon": -122.4327, "dist_km": 0.57},
-  {"rank": 10, "neighborhood": "Western Addition", "lat": 37.7822, "lon": -122.4291, "dist_km": 0.46},
-  {"rank": 11, "neighborhood": "Hayes Valley", "lat": 37.7751, "lon": -122.4270, "dist_km": 0.81},
-  {"rank": 12, "neighborhood": "Castro/Upper Market", "lat": 37.7630, "lon": -122.4332, "dist_km": 1.45},
-  {"rank": 13, "neighborhood": "Haight Ashbury", "lat": 37.7695, "lon": -122.4440, "dist_km": 1.18},
-  {"rank": 14, "neighborhood": "Lone Mountain/USF", "lat": 37.7779, "lon": -122.4476, "dist_km": 0.99},
-  {"rank": 15, "neighborhood": "Presidio Heights", "lat": 37.7855, "lon": -122.4512, "dist_km": 0.90},
-  {"rank": 16, "neighborhood": "Inner Richmond", "lat": 37.7803, "lon": -122.4648, "dist_km": 1.33},
-  {"rank": 17, "neighborhood": "Golden Gate Park", "lat": 37.7698, "lon": -122.4699, "dist_km": 1.25},
-  {"rank": 18, "neighborhood": "Inner Sunset", "lat": 37.7610, "lon": -122.4655, "dist_km": 1.06},
-  {"rank": 19, "neighborhood": "Twin Peaks", "lat": 37.7522, "lon": -122.4462, "dist_km": 1.96},
-  {"rank": 20, "neighborhood": "Noe Valley", "lat": 37.7496, "lon": -122.4328, "dist_km": 1.21},
-  {"rank": 21, "neighborhood": "Glen Park", "lat": 37.7388, "lon": -122.4332, "dist_km": 1.21},
-  {"rank": 22, "neighborhood": "Bernal Heights", "lat": 37.7422, "lon": -122.4158, "dist_km": 1.58},
-  {"rank": 23, "neighborhood": "Portola", "lat": 37.7273, "lon": -122.4075, "dist_km": 1.81},
-  {"rank": 24, "neighborhood": "McLaren Park", "lat": 37.7200, "lon": -122.4166, "dist_km": 1.14},
-  {"rank": 25, "neighborhood": "Visitacion Valley", "lat": 37.7124, "lon": -122.4120, "dist_km": 0.94},
-  {"rank": 26, "neighborhood": "Excelsior", "lat": 37.7201, "lon": -122.4335, "dist_km": 2.08},
-  {"rank": 27, "neighborhood": "Outer Mission", "lat": 37.7209, "lon": -122.4423, "dist_km": 0.78},
-  {"rank": 28, "neighborhood": "Oceanview/Merced/Ingleside", "lat": 37.7177, "lon": -122.4603, "dist_km": 1.62},
-  {"rank": 29, "neighborhood": "Lakeshore", "lat": 37.7220, "lon": -122.4790, "dist_km": 1.71},
-  {"rank": 30, "neighborhood": "West of Twin Peaks", "lat": 37.7343, "lon": -122.4602, "dist_km": 2.14},
-  {"rank": 31, "neighborhood": "Sunset/Parkside", "lat": 37.7507, "lon": -122.4912, "dist_km": 3.28},
-  {"rank": 32, "neighborhood": "Outer Richmond", "lat": 37.7784, "lon": -122.4905, "dist_km": 3.08},
-  {"rank": 33, "neighborhood": "Lincoln Park", "lat": 37.7826, "lon": -122.4971, "dist_km": 0.75},
-  {"rank": 34, "neighborhood": "Seacliff", "lat": 37.7864, "lon": -122.4858, "dist_km": 1.08},
-  {"rank": 35, "neighborhood": "Presidio", "lat": 37.8001, "lon": -122.4604, "dist_km": 2.70},
-  {"rank": 36, "neighborhood": "Financial District/South Beach", "lat": 37.7895, "lon": -122.3994, "dist_km": 5.49},
-  {"rank": 37, "neighborhood": "Mission Bay", "lat": 37.7733, "lon": -122.3934, "dist_km": 1.87},
-  {"rank": 38, "neighborhood": "Potrero Hill", "lat": 37.7595, "lon": -122.3965, "dist_km": 1.55},
-  {"rank": 39, "neighborhood": "Mission", "lat": 37.7627, "lon": -122.4174, "dist_km": 1.87},
-  {"rank": 40, "neighborhood": "Bayview Hunters Point", "lat": 37.7322, "lon": -122.3905, "dist_km": 4.13},
-  {"rank": 41, "neighborhood": "Treasure Island", "lat": 37.8264, "lon": -122.3738, "dist_km": 10.57}
+  {
+    "rank": 1,
+    "neighborhood": "South of Market",
+    "lat": 37.7791,
+    "lon": -122.4076,
+    "dist_km": 0
+  },
+  {
+    "rank": 2,
+    "neighborhood": "Tenderloin",
+    "lat": 37.7839,
+    "lon": -122.4145,
+    "dist_km": 0.81
+  },
+  {
+    "rank": 3,
+    "neighborhood": "Nob Hill",
+    "lat": 37.79,
+    "lon": -122.4161,
+    "dist_km": 0.69
+  },
+  {
+    "rank": 4,
+    "neighborhood": "Russian Hill",
+    "lat": 37.8,
+    "lon": -122.4204,
+    "dist_km": 1.17
+  },
+  {
+    "rank": 5,
+    "neighborhood": "Marina",
+    "lat": 37.8002,
+    "lon": -122.4357,
+    "dist_km": 1.34
+  },
+  {
+    "rank": 6,
+    "neighborhood": "Pacific Heights",
+    "lat": 37.7904,
+    "lon": -122.4323,
+    "dist_km": 1.13
+  },
+  {
+    "rank": 7,
+    "neighborhood": "Japantown",
+    "lat": 37.7852,
+    "lon": -122.4327,
+    "dist_km": 0.58
+  },
+  {
+    "rank": 8,
+    "neighborhood": "Western Addition",
+    "lat": 37.7822,
+    "lon": -122.4291,
+    "dist_km": 0.46
+  },
+  {
+    "rank": 9,
+    "neighborhood": "Hayes Valley",
+    "lat": 37.7751,
+    "lon": -122.427,
+    "dist_km": 0.81
+  },
+  {
+    "rank": 10,
+    "neighborhood": "Castro/Upper Market",
+    "lat": 37.763,
+    "lon": -122.4332,
+    "dist_km": 1.45
+  },
+  {
+    "rank": 11,
+    "neighborhood": "Haight Ashbury",
+    "lat": 37.7695,
+    "lon": -122.444,
+    "dist_km": 1.19
+  },
+  {
+    "rank": 12,
+    "neighborhood": "Lone Mountain/USF",
+    "lat": 37.7779,
+    "lon": -122.4476,
+    "dist_km": 0.99
+  },
+  {
+    "rank": 13,
+    "neighborhood": "Presidio Heights",
+    "lat": 37.7855,
+    "lon": -122.4512,
+    "dist_km": 0.9
+  },
+  {
+    "rank": 14,
+    "neighborhood": "Presidio",
+    "lat": 37.8001,
+    "lon": -122.4604,
+    "dist_km": 1.81
+  },
+  {
+    "rank": 15,
+    "neighborhood": "Inner Richmond",
+    "lat": 37.7803,
+    "lon": -122.4648,
+    "dist_km": 2.24
+  },
+  {
+    "rank": 16,
+    "neighborhood": "Seacliff",
+    "lat": 37.7864,
+    "lon": -122.4858,
+    "dist_km": 1.97
+  },
+  {
+    "rank": 17,
+    "neighborhood": "Lincoln Park",
+    "lat": 37.7826,
+    "lon": -122.4971,
+    "dist_km": 1.08
+  },
+  {
+    "rank": 18,
+    "neighborhood": "Outer Richmond",
+    "lat": 37.7784,
+    "lon": -122.4905,
+    "dist_km": 0.74
+  },
+  {
+    "rank": 19,
+    "neighborhood": "Golden Gate Park",
+    "lat": 37.7698,
+    "lon": -122.4699,
+    "dist_km": 2.05
+  },
+  {
+    "rank": 20,
+    "neighborhood": "Inner Sunset",
+    "lat": 37.761,
+    "lon": -122.4655,
+    "dist_km": 1.05
+  },
+  {
+    "rank": 21,
+    "neighborhood": "Sunset/Parkside",
+    "lat": 37.7507,
+    "lon": -122.4912,
+    "dist_km": 2.53
+  },
+  {
+    "rank": 22,
+    "neighborhood": "West of Twin Peaks",
+    "lat": 37.7343,
+    "lon": -122.4602,
+    "dist_km": 3.28
+  },
+  {
+    "rank": 23,
+    "neighborhood": "Lakeshore",
+    "lat": 37.722,
+    "lon": -122.479,
+    "dist_km": 2.15
+  },
+  {
+    "rank": 24,
+    "neighborhood": "Oceanview/Merced/Ingleside",
+    "lat": 37.7177,
+    "lon": -122.4603,
+    "dist_km": 1.71
+  },
+  {
+    "rank": 25,
+    "neighborhood": "Outer Mission",
+    "lat": 37.7209,
+    "lon": -122.4423,
+    "dist_km": 1.62
+  },
+  {
+    "rank": 26,
+    "neighborhood": "Excelsior",
+    "lat": 37.7201,
+    "lon": -122.4335,
+    "dist_km": 0.78
+  },
+  {
+    "rank": 27,
+    "neighborhood": "McLaren Park",
+    "lat": 37.72,
+    "lon": -122.4166,
+    "dist_km": 1.49
+  },
+  {
+    "rank": 28,
+    "neighborhood": "Visitacion Valley",
+    "lat": 37.7124,
+    "lon": -122.412,
+    "dist_km": 0.94
+  },
+  {
+    "rank": 29,
+    "neighborhood": "Portola",
+    "lat": 37.7273,
+    "lon": -122.4075,
+    "dist_km": 1.7
+  },
+  {
+    "rank": 30,
+    "neighborhood": "Bayview Hunters Point",
+    "lat": 37.7322,
+    "lon": -122.3905,
+    "dist_km": 1.59
+  },
+  {
+    "rank": 31,
+    "neighborhood": "Bernal Heights",
+    "lat": 37.7422,
+    "lon": -122.4158,
+    "dist_km": 2.49
+  },
+  {
+    "rank": 32,
+    "neighborhood": "Glen Park",
+    "lat": 37.7388,
+    "lon": -122.4332,
+    "dist_km": 1.58
+  },
+  {
+    "rank": 33,
+    "neighborhood": "Twin Peaks",
+    "lat": 37.7522,
+    "lon": -122.4462,
+    "dist_km": 1.88
+  },
+  {
+    "rank": 34,
+    "neighborhood": "Noe Valley",
+    "lat": 37.7496,
+    "lon": -122.4328,
+    "dist_km": 1.21
+  },
+  {
+    "rank": 35,
+    "neighborhood": "Mission",
+    "lat": 37.7627,
+    "lon": -122.4174,
+    "dist_km": 1.99
+  },
+  {
+    "rank": 36,
+    "neighborhood": "Potrero Hill",
+    "lat": 37.7595,
+    "lon": -122.3965,
+    "dist_km": 1.87
+  },
+  {
+    "rank": 37,
+    "neighborhood": "Mission Bay",
+    "lat": 37.7733,
+    "lon": -122.3934,
+    "dist_km": 1.56
+  },
+  {
+    "rank": 38,
+    "neighborhood": "Financial District/South Beach",
+    "lat": 37.7895,
+    "lon": -122.3994,
+    "dist_km": 1.88
+  },
+  {
+    "rank": 39,
+    "neighborhood": "Chinatown",
+    "lat": 37.7965,
+    "lon": -122.4072,
+    "dist_km": 1.04
+  },
+  {
+    "rank": 40,
+    "neighborhood": "North Beach",
+    "lat": 37.8036,
+    "lon": -122.4103,
+    "dist_km": 0.84
+  },
+  {
+    "rank": 41,
+    "neighborhood": "Treasure Island",
+    "lat": 37.8264,
+    "lon": -122.3738,
+    "dist_km": 4.09
+  }
 ]
