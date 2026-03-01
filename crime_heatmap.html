@@ -93,8 +93,9 @@
             });
         });
 
-        const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
-            .domain([0, maxValue]);
+        const colorScale = d3.scaleLinear()
+            .domain([0, maxValue])
+            .range(["#f7fbff", "#d62728"]);
 
         const chartDiv = document.getElementById('chart');
         const availableWidth = chartDiv.clientWidth;
