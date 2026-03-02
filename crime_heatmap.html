@@ -72,6 +72,29 @@
             color: #ff6b6b;
             font-weight: bold;
         }
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-left: 20px;
+        }
+        .tab {
+            padding: 6px 16px;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+        }
+        .tab.active {
+            background: white;
+            color: #333;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
@@ -242,6 +265,151 @@
                 .attr('class', 'skull')
                 .attr('opacity', 0.8);
         });
+
+        // ===== YEARLY DATA =====
+        const yearlyData = [{"neighborhood":"South of Market","y_2018":"13378","y_2019":"12208","y_2020":"8982","y_2021":"9635","y_2022":"11934","y_2023":"11448","y_2024":"10637","y_2025":"11894"},{"neighborhood":"Tenderloin","y_2018":"13726","y_2019":"13420","y_2020":"10670","y_2021":"10536","y_2022":"12726","y_2023":"13417","y_2024":"13272","y_2025":"12383"},{"neighborhood":"Nob Hill","y_2018":"3753","y_2019":"4103","y_2020":"3312","y_2021":"3390","y_2022":"3514","y_2023":"3411","y_2024":"3070","y_2025":"2500"},{"neighborhood":"Russian Hill","y_2018":"3373","y_2019":"3160","y_2020":"2514","y_2021":"3556","y_2022":"3230","y_2023":"3052","y_2024":"1602","y_2025":"1183"},{"neighborhood":"Marina","y_2018":"3043","y_2019":"3846","y_2020":"3610","y_2021":"4341","y_2022":"3816","y_2023":"3300","y_2024":"2458","y_2025":"1873"},{"neighborhood":"Pacific Heights","y_2018":"2204","y_2019":"2390","y_2020":"2348","y_2021":"2328","y_2022":"2147","y_2023":"2271","y_2024":"1788","y_2025":"1503"},{"neighborhood":"Japantown","y_2018":"1100","y_2019":"1258","y_2020":"699","y_2021":"913","y_2022":"1214","y_2023":"900","y_2024":"626","y_2025":"412"},{"neighborhood":"Western Addition","y_2018":"4751","y_2019":"4951","y_2020":"3770","y_2021":"3815","y_2022":"4578","y_2023":"4524","y_2024":"3662","y_2025":"2930"},{"neighborhood":"Hayes Valley","y_2018":"3625","y_2019":"4100","y_2020":"3319","y_2021":"3298","y_2022":"3467","y_2023":"3674","y_2024":"2479","y_2025":"2083"},{"neighborhood":"Castro/Upper Market","y_2018":"4341","y_2019":"4018","y_2020":"3329","y_2021":"3593","y_2022":"3133","y_2023":"2851","y_2024":"2587","y_2025":"2307"},{"neighborhood":"Haight Ashbury","y_2018":"2613","y_2019":"2297","y_2020":"1952","y_2021":"2033","y_2022":"1848","y_2023":"1706","y_2024":"1384","y_2025":"1320"},{"neighborhood":"Lone Mountain/USF","y_2018":"1715","y_2019":"1581","y_2020":"1529","y_2021":"1364","y_2022":"1410","y_2023":"1552","y_2024":"1345","y_2025":"1126"},{"neighborhood":"Presidio Heights","y_2018":"812","y_2019":"816","y_2020":"916","y_2021":"819","y_2022":"776","y_2023":"909","y_2024":"703","y_2025":"525"},{"neighborhood":"Presidio","y_2018":"240","y_2019":"222","y_2020":"108","y_2021":"130","y_2022":"102","y_2023":"94","y_2024":"66","y_2025":"56"},{"neighborhood":"Inner Richmond","y_2018":"1725","y_2019":"1757","y_2020":"1509","y_2021":"1553","y_2022":"1599","y_2023":"1477","y_2024":"1116","y_2025":"872"},{"neighborhood":"Seacliff","y_2018":"150","y_2019":"161","y_2020":"181","y_2021":"242","y_2022":"200","y_2023":"150","y_2024":"120","y_2025":"92"},{"neighborhood":"Lincoln Park","y_2018":"153","y_2019":"210","y_2020":"184","y_2021":"294","y_2022":"213","y_2023":"268","y_2024":"103","y_2025":"46"},{"neighborhood":"Outer Richmond","y_2018":"2562","y_2019":"2938","y_2020":"2616","y_2021":"2599","y_2022":"2657","y_2023":"2462","y_2024":"1799","y_2025":"1435"},{"neighborhood":"Golden Gate Park","y_2018":"2033","y_2019":"1935","y_2020":"1385","y_2021":"1855","y_2022":"1860","y_2023":"1892","y_2024":"1095","y_2025":"674"},{"neighborhood":"Inner Sunset","y_2018":"1427","y_2019":"1541","y_2020":"1367","y_2021":"1434","y_2022":"1360","y_2023":"1541","y_2024":"1184","y_2025":"917"},{"neighborhood":"Sunset/Parkside","y_2018":"4125","y_2019":"3649","y_2020":"3373","y_2021":"3459","y_2022":"3858","y_2023":"3726","y_2024":"3301","y_2025":"2648"},{"neighborhood":"West of Twin Peaks","y_2018":"2739","y_2019":"2772","y_2020":"2350","y_2021":"2456","y_2022":"2508","y_2023":"2690","y_2024":"2010","y_2025":"1617"},{"neighborhood":"Lakeshore","y_2018":"1614","y_2019":"1803","y_2020":"1208","y_2021":"1516","y_2022":"1914","y_2023":"1925","y_2024":"1443","y_2025":"1416"},{"neighborhood":"Oceanview/Merced/Ingleside","y_2018":"1504","y_2019":"1292","y_2020":"1146","y_2021":"1377","y_2022":"1417","y_2023":"1339","y_2024":"1088","y_2025":"813"},{"neighborhood":"Outer Mission","y_2018":"1851","y_2019":"1817","y_2020":"1738","y_2021":"1776","y_2022":"1649","y_2023":"1849","y_2024":"1645","y_2025":"1207"},{"neighborhood":"Excelsior","y_2018":"2302","y_2019":"2063","y_2020":"2236","y_2021":"2168","y_2022":"2115","y_2023":"2363","y_2024":"2196","y_2025":"1557"},{"neighborhood":"McLaren Park","y_2018":"119","y_2019":"159","y_2020":"149","y_2021":"175","y_2022":"186","y_2023":"186","y_2024":"151","y_2025":"96"},{"neighborhood":"Visitacion Valley","y_2018":"1582","y_2019":"1327","y_2020":"1368","y_2021":"1168","y_2022":"1222","y_2023":"1373","y_2024":"1067","y_2025":"799"},{"neighborhood":"Portola","y_2018":"1522","y_2019":"1517","y_2020":"1390","y_2021":"1497","y_2022":"1430","y_2023":"1672","y_2024":"1246","y_2025":"946"},{"neighborhood":"Bayview Hunters Point","y_2018":"7383","y_2019":"7563","y_2020":"7446","y_2021":"8440","y_2022":"8431","y_2023":"8314","y_2024":"6959","y_2025":"6081"},{"neighborhood":"Bernal Heights","y_2018":"2753","y_2019":"2651","y_2020":"2640","y_2021":"2844","y_2022":"2764","y_2023":"2972","y_2024":"2515","y_2025":"1854"},{"neighborhood":"Glen Park","y_2018":"691","y_2019":"702","y_2020":"713","y_2021":"723","y_2022":"748","y_2023":"738","y_2024":"550","y_2025":"394"},{"neighborhood":"Twin Peaks","y_2018":"594","y_2019":"822","y_2020":"803","y_2021":"616","y_2022":"726","y_2023":"579","y_2024":"421","y_2025":"283"},{"neighborhood":"Noe Valley","y_2018":"1233","y_2019":"1273","y_2020":"1384","y_2021":"1518","y_2022":"1468","y_2023":"1425","y_2024":"1619","y_2025":"1294"},{"neighborhood":"Mission","y_2018":"16846","y_2019":"14734","y_2020":"11042","y_2021":"11589","y_2022":"12479","y_2023":"12759","y_2024":"11991","y_2025":"11500"},{"neighborhood":"Potrero Hill","y_2018":"2470","y_2019":"2262","y_2020":"2325","y_2021":"2262","y_2022":"2144","y_2023":"1846","y_2024":"1541","y_2025":"1201"},{"neighborhood":"Mission Bay","y_2018":"2804","y_2019":"2422","y_2020":"2201","y_2021":"2458","y_2022":"2304","y_2023":"2203","y_2024":"1949","y_2025":"1849"},{"neighborhood":"Financial District/South Beach","y_2018":"12389","y_2019":"11681","y_2020":"6698","y_2021":"7658","y_2022":"8095","y_2023":"7217","y_2024":"6026","y_2025":"4640"},{"neighborhood":"Chinatown","y_2018":"2828","y_2019":"2760","y_2020":"1839","y_2021":"2031","y_2022":"2255","y_2023":"2203","y_2024":"2070","y_2025":"1771"},{"neighborhood":"North Beach","y_2018":"4982","y_2019":"4086","y_2020":"2449","y_2021":"4718","y_2022":"4764","y_2023":"4100","y_2024":"2303","y_2025":"1522"},{"neighborhood":"Treasure Island","y_2018":"480","y_2019":"399","y_2020":"415","y_2021":"511","y_2022":"485","y_2023":"406","y_2024":"413","y_2025":"335"}];
+
+        const yearlyHomicideData = [{"neighborhood":"South of Market","y_2018":"3","y_2019":"2","y_2020":"2","y_2021":"2","y_2022":"2","y_2023":"5","y_2024":"9","y_2025":"12"},{"neighborhood":"Tenderloin","y_2018":"6","y_2019":"2","y_2020":"1","y_2021":"2","y_2022":"4","y_2023":"7","y_2024":"3","y_2025":"3"},{"neighborhood":"Nob Hill","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"2","y_2024":"0","y_2025":"1"},{"neighborhood":"Russian Hill","y_2018":"0","y_2019":"0","y_2020":"1","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"1"},{"neighborhood":"Marina","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"2","y_2022":"1","y_2023":"3","y_2024":"0","y_2025":"0"},{"neighborhood":"Pacific Heights","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Japantown","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Western Addition","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"7","y_2024":"0","y_2025":"1"},{"neighborhood":"Hayes Valley","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"3","y_2024":"0","y_2025":"0"},{"neighborhood":"Castro/Upper Market","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Haight Ashbury","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Lone Mountain/USF","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"3","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Presidio Heights","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Presidio","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Inner Richmond","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Seacliff","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Lincoln Park","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Outer Richmond","y_2018":"0","y_2019":"1","y_2020":"1","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"1"},{"neighborhood":"Golden Gate Park","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"0","y_2024":"1","y_2025":"1"},{"neighborhood":"Inner Sunset","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"1","y_2025":"0"},{"neighborhood":"Sunset/Parkside","y_2018":"1","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"2","y_2023":"1","y_2024":"2","y_2025":"1"},{"neighborhood":"West of Twin Peaks","y_2018":"2","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Lakeshore","y_2018":"0","y_2019":"1","y_2020":"0","y_2021":"2","y_2022":"2","y_2023":"1","y_2024":"0","y_2025":"0"},{"neighborhood":"Oceanview/Merced/Ingleside","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"3","y_2024":"2","y_2025":"3"},{"neighborhood":"Outer Mission","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"1","y_2024":"1","y_2025":"7"},{"neighborhood":"Excelsior","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"3","y_2022":"0","y_2023":"0","y_2024":"2","y_2025":"0"},{"neighborhood":"McLaren Park","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Visitacion Valley","y_2018":"0","y_2019":"0","y_2020":"1","y_2021":"0","y_2022":"1","y_2023":"0","y_2024":"0","y_2025":"3"},{"neighborhood":"Portola","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"2","y_2024":"2","y_2025":"1"},{"neighborhood":"Bayview Hunters Point","y_2018":"1","y_2019":"3","y_2020":"0","y_2021":"2","y_2022":"2","y_2023":"5","y_2024":"7","y_2025":"4"},{"neighborhood":"Bernal Heights","y_2018":"1","y_2019":"0","y_2020":"1","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"1","y_2025":"0"},{"neighborhood":"Glen Park","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"1","y_2025":"0"},{"neighborhood":"Twin Peaks","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Noe Valley","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Mission","y_2018":"5","y_2019":"2","y_2020":"2","y_2021":"1","y_2022":"1","y_2023":"6","y_2024":"8","y_2025":"5"},{"neighborhood":"Potrero Hill","y_2018":"2","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"1","y_2024":"0","y_2025":"0"},{"neighborhood":"Mission Bay","y_2018":"0","y_2019":"1","y_2020":"0","y_2021":"0","y_2022":"1","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Financial District/South Beach","y_2018":"0","y_2019":"1","y_2020":"3","y_2021":"0","y_2022":"1","y_2023":"0","y_2024":"0","y_2025":"0"},{"neighborhood":"Chinatown","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"1"},{"neighborhood":"North Beach","y_2018":"2","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"1"},{"neighborhood":"Treasure Island","y_2018":"0","y_2019":"0","y_2020":"0","y_2021":"0","y_2022":"0","y_2023":"0","y_2024":"0","y_2025":"0"}];
+
+        // ===== TAB SWITCHING =====
+        function renderYearly() {
+            d3.select('#chart').select('svg').remove();
+            const years = [2018,2019,2020,2021,2022,2023,2024,2025];
+            const numCols = years.length;
+            const numRows = yearlyData.length;
+
+            let yMaxValue = 0;
+            yearlyData.forEach(row => {
+                years.forEach(y => {
+                    const val = parseInt(row[`y_${y}`]) || 0;
+                    if (val > yMaxValue) yMaxValue = val;
+                });
+            });
+
+            const yHomicideLookup = {};
+            yearlyHomicideData.forEach(row => {
+                years.forEach(y => {
+                    const val = parseInt(row[`y_${y}`]) || 0;
+                    if (val > 0) yHomicideLookup[row.neighborhood + '_' + y] = val;
+                });
+            });
+
+            const yColorScale = d3.scaleLinear().domain([0, yMaxValue]).range(["#f7fbff", "#d62728"]);
+
+            const cDiv = document.getElementById('chart');
+            const aW = cDiv.clientWidth;
+            const aH = cDiv.clientHeight;
+            const mL = 135, mT = 30, mR = 10, mB = 10;
+            const gW = aW - mL - mR;
+            const gH = aH - mT - mB;
+            const cW = gW / numCols;
+            const cH = gH / numRows;
+
+            const ySvg = d3.select('#chart').append('svg').attr('width', aW).attr('height', aH);
+
+            ySvg.selectAll('.neighborhood-label').data(yearlyData).enter()
+                .append('text').attr('class', 'neighborhood-label')
+                .attr('x', mL - 5).attr('y', (d, i) => mT + (i * cH) + (cH / 2))
+                .attr('dy', '0.35em').attr('text-anchor', 'end')
+                .attr('font-size', Math.min(11, Math.max(7, cH * 0.7)) + 'px')
+                .text(d => d.neighborhood);
+
+            years.forEach((y, i) => {
+                ySvg.append('text').attr('class', 'week-label')
+                    .attr('x', mL + (i * cW) + (cW / 2)).attr('y', mT - 8)
+                    .attr('font-size', Math.min(13, Math.max(9, cW * 0.15)) + 'px')
+                    .text(y);
+            });
+
+            const yCellData = yearlyData.flatMap((row, rowIdx) =>
+                years.map((y, colIdx) => ({
+                    neighborhood: row.neighborhood, year: y,
+                    value: parseInt(row[`y_${y}`]) || 0,
+                    homicides: yHomicideLookup[row.neighborhood + '_' + y] || 0,
+                    rowIdx, colIdx
+                }))
+            );
+
+            ySvg.selectAll('.cell').data(yCellData).enter()
+                .append('rect').attr('class', 'cell')
+                .attr('x', d => mL + (d.colIdx * cW))
+                .attr('y', d => mT + (d.rowIdx * cH))
+                .attr('width', cW - 1).attr('height', cH - 1)
+                .attr('fill', d => d.value === 0 ? '#f7f7f7' : yColorScale(d.value))
+                .on('mouseover', function(event, d) {
+                    const tooltip = d3.select('#tooltip');
+                    let html = `<strong>${d.neighborhood}</strong><br/>${d.year}: ${d.value.toLocaleString()} incidents`;
+                    if (d.homicides > 0) html += `<br/><span class="homicide-note">💀 ${d.homicides} homicide${d.homicides > 1 ? 's' : ''}</span>`;
+                    tooltip.style('display', 'block').html(html)
+                        .style('left', (event.pageX + 10) + 'px').style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() { d3.select('#tooltip').style('display', 'none'); });
+
+            yCellData.filter(d => d.homicides > 0).forEach(d => {
+                const x = mL + (d.colIdx * cW);
+                const y = mT + (d.rowIdx * cH);
+                const iconSize = Math.min(cW, cH) * 0.7;
+                const oX = (cW - iconSize) / 2;
+                const oY = (cH - iconSize) / 2;
+                ySvg.append('use').attr('href', '#skull-icon')
+                    .attr('x', x + oX).attr('y', y + oY)
+                    .attr('width', iconSize).attr('height', iconSize)
+                    .attr('class', 'skull').attr('opacity', 0.8);
+            });
+        }
+
+        function renderWeekly() {
+            d3.select('#chart').select('svg').remove();
+            // Re-render weekly (same as initial)
+            const wSvg = d3.select('#chart').append('svg').attr('width', availableWidth).attr('height', availableHeight);
+            wSvg.selectAll('.neighborhood-label').data(data).enter()
+                .append('text').attr('class', 'neighborhood-label')
+                .attr('x', marginLeft - 5).attr('y', (d, i) => marginTop + (i * cellHeight) + (cellHeight / 2))
+                .attr('dy', '0.35em').attr('text-anchor', 'end')
+                .attr('font-size', Math.min(11, Math.max(7, cellHeight * 0.7)) + 'px')
+                .text(d => d.neighborhood);
+            monthStarts.forEach(([week, label]) => {
+                const x = marginLeft + ((week - 1) * cellWidth) + (cellWidth / 2);
+                wSvg.append('text').attr('class', 'week-label').attr('x', x).attr('y', marginTop - 5)
+                    .attr('font-size', Math.min(10, Math.max(7, cellHeight * 0.6)) + 'px').text(label);
+            });
+            wSvg.selectAll('.cell').data(cellData).enter()
+                .append('rect').attr('class', 'cell')
+                .attr('x', d => marginLeft + (d.colIdx * cellWidth))
+                .attr('y', d => marginTop + (d.rowIdx * cellHeight))
+                .attr('width', cellWidth - 0.5).attr('height', cellHeight - 0.5)
+                .attr('fill', d => d.value === 0 ? '#f7f7f7' : colorScale(d.value))
+                .on('mouseover', function(event, d) {
+                    const tooltip = d3.select('#tooltip');
+                    let html = `<strong>${d.neighborhood}</strong><br/>Week ${d.week}: ${d.value} incidents`;
+                    if (d.homicides > 0) html += `<br/><span class="homicide-note">💀 ${d.homicides} homicide${d.homicides > 1 ? 's' : ''}</span>`;
+                    tooltip.style('display', 'block').html(html)
+                        .style('left', (event.pageX + 10) + 'px').style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() { d3.select('#tooltip').style('display', 'none'); });
+            homicideCells.forEach(d => {
+                const x = marginLeft + (d.colIdx * cellWidth);
+                const y = marginTop + (d.rowIdx * cellHeight);
+                const iconSize = Math.min(cellWidth, cellHeight) * 0.85;
+                const oX = (cellWidth - iconSize) / 2;
+                const oY = (cellHeight - iconSize) / 2;
+                wSvg.append('use').attr('href', '#skull-icon')
+                    .attr('x', x + oX).attr('y', y + oY)
+                    .attr('width', iconSize).attr('height', iconSize)
+                    .attr('class', 'skull').attr('opacity', 0.8);
+            });
+        }
+
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if (tab === 'yearly') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                renderYearly();
+            } else {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                renderWeekly();
+            }
+        };
     </script>
 </body>
 </html>
