@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SF Traffic Crashes by Neighborhood — 2025</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fff;
+    color: #333;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #111;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 20px;
+  }
+  #overview {
+    margin-bottom: 4px;
+  }
+  .overview-note {
+    font-size: 10px;
+    color: #bbb;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .legend {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: #999;
+    flex-wrap: wrap;
+  }
+  .legend-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-bar {
+    height: 10px;
+    width: 180px;
+    border-radius: 2px;
+    border: 1px solid #eee;
+  }
+  .legend-sep {
+    color: #ddd;
+    margin: 0 4px;
+  }
+  .hood-label {
+    font-size: 14px;
+    font-weight: 700;
+    fill: #333;
+  }
+  .hood-total {
+    font-size: 11px;
+    font-weight: 400;
+    fill: #999;
+  }
+  .street-label {
+    font-size: 10px;
+    fill: #666;
+  }
+  .month-label {
+    font-size: 10px;
+    fill: #aaa;
+  }
+  .bar-label {
+    font-size: 9px;
+    fill: #999;
+  }
+  .bar-injury {
+    fill: #e8c4c4;
+  }
+  .bar-fatal {
+    fill: #111;
+  }
+  .cell:hover {
+    stroke: #333;
+    stroke-width: 1.2;
+  }
+  .skull {
+    font-size: 9px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+  }
+  .ov-bar {
+    cursor: pointer;
+  }
+  .ov-bar:hover {
+    opacity: 0.8;
+  }
+  .ov-label {
+    font-size: 9px;
+    fill: #999;
+  }
+  .ov-value {
+    font-size: 8px;
+    fill: #bbb;
+  }
+  #tooltip {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+    color: #333;
+    line-height: 1.5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  #tooltip .tt-street { font-weight: 700; color: #111; }
+  #tooltip .tt-count { color: #a4133c; font-weight: 700; }
+  #tooltip .tt-fatal { color: #111; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>SF Traffic Crashes by Neighborhood — 2025</h1>
+<p class="subtitle">Top 5 streets per neighborhood, weekly crash counts. Top 20 neighborhoods by total crashes.</p>
+
+<div id="overview"></div>
+<p class="overview-note">Total crashes per neighborhood. Click a bar to jump to that neighborhood.</p>
+
+<div class="legend">
+  <div class="legend-group">
+    <span>0</span>
+    <canvas id="legendBar" class="legend-bar" width="180" height="10"></canvas>
+    <span id="legendMax"></span>
+    <span>crashes/week</span>
+  </div>
+  <span class="legend-sep">|</span>
+  <div class="legend-group">
+    <span>💀</span>
+    <span>= week with fatality</span>
+  </div>
+  <span class="legend-sep">|</span>
+  <div class="legend-group">
+    <svg width="40" height="10"><rect width="20" height="10" fill="#e8c4c4" rx="1.5"/><rect x="20" width="20" height="10" fill="#111" rx="1.5"/></svg>
+    <span>injury + fatal (street bar)</span>
+  </div>
+</div>
+
+<div id="chart"></div>
+
+<div id="tooltip">
+  <div class="tt-street"></div>
+  <div class="tt-week"></div>
+  <div class="tt-crashes"></div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const WEEKLY =
+[{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-06-02","crashes":4,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-06-30","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-07-07","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-09-22","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-10-20","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-11-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-12-01","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"03RD ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-03-31","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-05-12","crashes":2,"has_fatal":1,"deaths":2},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-08-04","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-11-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-02-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-08-11","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","rank":3,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2024-12-30","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","rank":4,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-09-15","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","rank":5,"week":"2025-10-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-03-31","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-06-30","crashes":4,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-08-11","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-10-27","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-11-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-12-01","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"MISSION ST","rank":1,"week":"2025-12-22","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-01-27","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","rank":3,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-09-29","crashes":1,"has_fatal":1,"deaths":2},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","rank":4,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","rank":5,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"MARKET ST","rank":1,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-05-05","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"18TH ST","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"NOE ST","rank":3,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"NOE ST","rank":3,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"NOE ST","rank":3,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"NOE ST","rank":3,"week":"2025-10-27","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"14TH ST","rank":4,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"14TH ST","rank":4,"week":"2025-11-17","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"CASTRO ST","rank":5,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"CASTRO ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"CASTRO ST","rank":5,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Castro/Upper Market","street":"CASTRO ST","rank":5,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"STOCKTON ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"COLUMBUS AVE","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"BROADWAY","rank":3,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"KEARNY ST","rank":4,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"KEARNY ST","rank":4,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"KEARNY ST","rank":4,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"KEARNY ST","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"KEARNY ST","rank":4,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"JACKSON ST","rank":5,"week":"2025-03-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"JACKSON ST","rank":5,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"JACKSON ST","rank":5,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Chinatown","street":"JACKSON ST","rank":5,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-01-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-04-28","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"MISSION ST","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-01-20","crashes":1,"has_fatal":1,"deaths":2},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-03-10","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"GENEVA AVE","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"SILVER AVE","rank":3,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"PERSIA AVE","rank":4,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"PERSIA AVE","rank":4,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"PERSIA AVE","rank":4,"week":"2025-10-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"PERSIA AVE","rank":4,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"PERSIA AVE","rank":4,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"FELTON ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"FELTON ST","rank":5,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Excelsior","street":"FELTON ST","rank":5,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-01-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-02-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-03-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-04-28","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-05-12","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-06-02","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-10-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-10-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","rank":1,"week":"2025-12-29","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-05-05","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MARKET ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-01-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-09-15","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"MISSION ST","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"02ND ST","rank":4,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-03-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-07-07","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Financial District/South Beach","street":"03RD ST","rank":5,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-04-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":1,"deaths":2},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-08-04","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"FULTON ST","rank":1,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"GREAT HWY","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","rank":4,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"STANYAN ST","rank":5,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"STANYAN ST","rank":5,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"STANYAN ST","rank":5,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"STANYAN ST","rank":5,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Golden Gate Park","street":"STANYAN ST","rank":5,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"GOUGH ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FELL ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","rank":3,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-11-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"FULTON ST","rank":4,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Hayes Valley","street":"HAIGHT ST","rank":5,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-08-18","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"LOMBARD ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"MARINA BLVD","rank":2,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"BUCHANAN ST","rank":3,"week":"2025-04-28","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"BUCHANAN ST","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"BUCHANAN ST","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"CHESTNUT ST","rank":4,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"CHESTNUT ST","rank":4,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"CHESTNUT ST","rank":4,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"CHESTNUT ST","rank":4,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"FRANKLIN ST","rank":5,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"FRANKLIN ST","rank":5,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"FRANKLIN ST","rank":5,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Marina","street":"FRANKLIN ST","rank":5,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-01-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-01-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-01-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-01-27","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-02-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-03-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-07-14","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-09-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-09-15","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-11-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-11-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-12-01","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"MISSION ST","rank":1,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-04-07","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-04-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-05-19","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-08-25","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"16TH ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-01-13","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-02-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-03-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-04-14","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-05-12","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-07-14","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-07-21","crashes":2,"has_fatal":1,"deaths":4},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-10-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","rank":3,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-02-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-03-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-05-26","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-08-18","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"FOLSOM ST","rank":4,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-01-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-02-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-04-14","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-05-12","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-09-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission","street":"VALENCIA ST","rank":5,"week":"2025-12-22","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"03RD ST","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"KING ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"04TH ST","rank":3,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"TOWNSEND ST","rank":4,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"07TH ST","rank":5,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"07TH ST","rank":5,"week":"2025-05-19","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"07TH ST","rank":5,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Mission Bay","street":"07TH ST","rank":5,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-09-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"POLK ST","rank":1,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"BUSH ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-04-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"HYDE ST","rank":3,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-02-03","crashes":1,"has_fatal":1,"deaths":1},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"JONES ST","rank":4,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-09-29","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","rank":5,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-04-07","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-04-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-10-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":1,"deaths":3},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","rank":1,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2024-10-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-06-23","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-09-01","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-10-27","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-12-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-12-15","crashes":1,"has_fatal":1,"deaths":2},
+{"hood":"Outer Mission","street":"MISSION ST","rank":2,"week":"2025-12-29","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-01-20","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"GENEVA AVE","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","rank":4,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"OCEAN AVE","rank":5,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"OCEAN AVE","rank":5,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Mission","street":"OCEAN AVE","rank":5,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-03-10","crashes":3,"has_fatal":1,"deaths":2},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"GEARY BLVD","rank":1,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"CLEMENT ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","rank":3,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"POINT LOBOS AVE","rank":4,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"POINT LOBOS AVE","rank":4,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"POINT LOBOS AVE","rank":4,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"POINT LOBOS AVE","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"BALBOA ST","rank":5,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"BALBOA ST","rank":5,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"BALBOA ST","rank":5,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Outer Richmond","street":"BALBOA ST","rank":5,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-02-03","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"POLK ST","rank":1,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-06-30","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"VAN NESS AVE","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BAY ST","rank":3,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"LARKIN ST","rank":4,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"LARKIN ST","rank":4,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"LARKIN ST","rank":4,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"LARKIN ST","rank":4,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"LARKIN ST","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BEACH ST","rank":5,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BEACH ST","rank":5,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Russian Hill","street":"BEACH ST","rank":5,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-01-13","crashes":1,"has_fatal":1,"deaths":6},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-02-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-03-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-03-31","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-04-07","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-04-28","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-08-04","crashes":2,"has_fatal":1,"deaths":2},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-09-29","crashes":3,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-10-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-12-01","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"06TH ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-01-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-02-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-06-09","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-09-15","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-10-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MISSION ST","rank":2,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-07-14","crashes":2,"has_fatal":1,"deaths":2},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-09-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-09-29","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-10-13","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"MARKET ST","rank":3,"week":"2025-12-22","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-02-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-04-28","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-07-21","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-09-08","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-09-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-11-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"08TH ST","rank":4,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-02-24","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-06-16","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"South of Market","street":"BRYANT ST","rank":5,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-01-27","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-11-03","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","rank":1,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","rank":2,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-08-11","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","rank":3,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"19TH AVE","rank":4,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","rank":5,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-03-17","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-06-02","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-06-30","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"POLK ST","rank":1,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-01-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-03-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-05-12","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-05-26","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-07-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"HYDE ST","rank":2,"week":"2025-10-27","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-02-10","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-03-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-12-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-12-15","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"LARKIN ST","rank":3,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-02-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-03-31","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-04-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"OFARRELL ST","rank":4,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-02-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-03-31","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-04-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-06-09","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-08-18","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Tenderloin","street":"EDDY ST","rank":5,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-06-02","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-07-21","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"19TH AVE","rank":1,"week":"2025-11-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-01-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":1,"deaths":2},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-08-11","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-10-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","rank":2,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","rank":3,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","rank":3,"week":"2025-02-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","rank":3,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","rank":3,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","rank":3,"week":"2025-12-15","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"BOSWORTH ST","rank":4,"week":"2025-05-12","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"BOSWORTH ST","rank":4,"week":"2025-07-07","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"BOSWORTH ST","rank":4,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"BOSWORTH ST","rank":4,"week":"2025-11-17","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"JUNIPERO SERRA BLVD","rank":5,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"JUNIPERO SERRA BLVD","rank":5,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"JUNIPERO SERRA BLVD","rank":5,"week":"2025-11-03","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"West of Twin Peaks","street":"JUNIPERO SERRA BLVD","rank":5,"week":"2025-12-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-01-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-08-25","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-09-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"EDDY ST","rank":1,"week":"2025-12-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-01-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-04-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-07-28","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-08-04","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-10-20","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"FRANKLIN ST","rank":2,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-01-06","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-04-14","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-06-16","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-06-23","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-09-01","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-09-29","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"VAN NESS AVE","rank":3,"week":"2025-11-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-03-10","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-04-28","crashes":2,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-05-19","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-06-30","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"WEBSTER ST","rank":4,"week":"2025-12-22","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-01-27","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-03-24","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-05-05","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-07-07","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-09-08","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-10-06","crashes":1,"has_fatal":0,"deaths":0},
+{"hood":"Western Addition","street":"TURK ST","rank":5,"week":"2025-10-13","crashes":1,"has_fatal":0,"deaths":0}]
+;
+const STREET_TOTALS =
+[{"hood":"Bayview Hunters Point","street":"03RD ST","total":35,"fatal_crashes":0,"rank":1},
+{"hood":"Bayview Hunters Point","street":"BAY SHORE BLVD","total":23,"fatal_crashes":1,"rank":2},
+{"hood":"Bayview Hunters Point","street":"EVANS AVE","total":14,"fatal_crashes":0,"rank":3},
+{"hood":"Bayview Hunters Point","street":"OAKDALE AVE","total":13,"fatal_crashes":0,"rank":4},
+{"hood":"Bayview Hunters Point","street":"INGALLS ST","total":11,"fatal_crashes":0,"rank":5},
+{"hood":"Bernal Heights","street":"MISSION ST","total":27,"fatal_crashes":0,"rank":1},
+{"hood":"Bernal Heights","street":"CESAR CHAVEZ ST","total":11,"fatal_crashes":0,"rank":2},
+{"hood":"Bernal Heights","street":"ALEMANY BLVD","total":8,"fatal_crashes":0,"rank":3},
+{"hood":"Bernal Heights","street":"CORTLAND AVE","total":7,"fatal_crashes":1,"rank":4},
+{"hood":"Bernal Heights","street":"BAY SHORE BLVD","total":6,"fatal_crashes":0,"rank":5},
+{"hood":"Castro/Upper Market","street":"MARKET ST","total":14,"fatal_crashes":0,"rank":1},
+{"hood":"Castro/Upper Market","street":"18TH ST","total":8,"fatal_crashes":0,"rank":2},
+{"hood":"Castro/Upper Market","street":"NOE ST","total":5,"fatal_crashes":0,"rank":3},
+{"hood":"Castro/Upper Market","street":"CASTRO ST","total":4,"fatal_crashes":0,"rank":4},
+{"hood":"Castro/Upper Market","street":"14TH ST","total":4,"fatal_crashes":0,"rank":5},
+{"hood":"Chinatown","street":"STOCKTON ST","total":12,"fatal_crashes":0,"rank":1},
+{"hood":"Chinatown","street":"COLUMBUS AVE","total":10,"fatal_crashes":0,"rank":2},
+{"hood":"Chinatown","street":"BROADWAY","total":6,"fatal_crashes":0,"rank":3},
+{"hood":"Chinatown","street":"KEARNY ST","total":5,"fatal_crashes":0,"rank":4},
+{"hood":"Chinatown","street":"JACKSON ST","total":5,"fatal_crashes":0,"rank":5},
+{"hood":"Excelsior","street":"MISSION ST","total":15,"fatal_crashes":0,"rank":1},
+{"hood":"Excelsior","street":"GENEVA AVE","total":10,"fatal_crashes":1,"rank":2},
+{"hood":"Excelsior","street":"SILVER AVE","total":7,"fatal_crashes":0,"rank":3},
+{"hood":"Excelsior","street":"PERSIA AVE","total":6,"fatal_crashes":0,"rank":4},
+{"hood":"Excelsior","street":"FELTON ST","total":3,"fatal_crashes":0,"rank":5},
+{"hood":"Financial District/South Beach","street":"THE EMBARCADERO","total":40,"fatal_crashes":0,"rank":1},
+{"hood":"Financial District/South Beach","street":"MARKET ST","total":15,"fatal_crashes":0,"rank":2},
+{"hood":"Financial District/South Beach","street":"MISSION ST","total":11,"fatal_crashes":0,"rank":3},
+{"hood":"Financial District/South Beach","street":"02ND ST","total":10,"fatal_crashes":0,"rank":4},
+{"hood":"Financial District/South Beach","street":"03RD ST","total":9,"fatal_crashes":0,"rank":5},
+{"hood":"Golden Gate Park","street":"FULTON ST","total":11,"fatal_crashes":1,"rank":1},
+{"hood":"Golden Gate Park","street":"JOHN F KENNEDY DR","total":7,"fatal_crashes":0,"rank":2},
+{"hood":"Golden Gate Park","street":"GREAT HWY","total":6,"fatal_crashes":0,"rank":3},
+{"hood":"Golden Gate Park","street":"PARK PRESIDIO BYPASS DR","total":6,"fatal_crashes":0,"rank":4},
+{"hood":"Golden Gate Park","street":"STANYAN ST","total":5,"fatal_crashes":0,"rank":5},
+{"hood":"Hayes Valley","street":"GOUGH ST","total":14,"fatal_crashes":0,"rank":1},
+{"hood":"Hayes Valley","street":"FELL ST","total":12,"fatal_crashes":0,"rank":2},
+{"hood":"Hayes Valley","street":"OCTAVIA ST","total":10,"fatal_crashes":0,"rank":3},
+{"hood":"Hayes Valley","street":"FULTON ST","total":8,"fatal_crashes":0,"rank":4},
+{"hood":"Hayes Valley","street":"HAIGHT ST","total":7,"fatal_crashes":0,"rank":5},
+{"hood":"Marina","street":"LOMBARD ST","total":16,"fatal_crashes":0,"rank":1},
+{"hood":"Marina","street":"MARINA BLVD","total":7,"fatal_crashes":0,"rank":2},
+{"hood":"Marina","street":"BUCHANAN ST","total":4,"fatal_crashes":0,"rank":3},
+{"hood":"Marina","street":"FRANKLIN ST","total":4,"fatal_crashes":0,"rank":4},
+{"hood":"Marina","street":"CHESTNUT ST","total":4,"fatal_crashes":0,"rank":5},
+{"hood":"Mission","street":"MISSION ST","total":52,"fatal_crashes":0,"rank":1},
+{"hood":"Mission","street":"16TH ST","total":37,"fatal_crashes":0,"rank":2},
+{"hood":"Mission","street":"SOUTH VAN NESS AVE","total":36,"fatal_crashes":1,"rank":3},
+{"hood":"Mission","street":"FOLSOM ST","total":27,"fatal_crashes":0,"rank":4},
+{"hood":"Mission","street":"VALENCIA ST","total":25,"fatal_crashes":0,"rank":5},
+{"hood":"Mission Bay","street":"KING ST","total":8,"fatal_crashes":0,"rank":1},
+{"hood":"Mission Bay","street":"03RD ST","total":8,"fatal_crashes":0,"rank":2},
+{"hood":"Mission Bay","street":"04TH ST","total":7,"fatal_crashes":0,"rank":3},
+{"hood":"Mission Bay","street":"TOWNSEND ST","total":6,"fatal_crashes":0,"rank":4},
+{"hood":"Mission Bay","street":"07TH ST","total":5,"fatal_crashes":0,"rank":5},
+{"hood":"Nob Hill","street":"HYDE ST","total":9,"fatal_crashes":0,"rank":1},
+{"hood":"Nob Hill","street":"BUSH ST","total":9,"fatal_crashes":0,"rank":2},
+{"hood":"Nob Hill","street":"POLK ST","total":9,"fatal_crashes":0,"rank":3},
+{"hood":"Nob Hill","street":"JONES ST","total":8,"fatal_crashes":1,"rank":4},
+{"hood":"Nob Hill","street":"CALIFORNIA ST","total":7,"fatal_crashes":0,"rank":5},
+{"hood":"Outer Mission","street":"ALEMANY BLVD","total":27,"fatal_crashes":1,"rank":1},
+{"hood":"Outer Mission","street":"MISSION ST","total":23,"fatal_crashes":1,"rank":2},
+{"hood":"Outer Mission","street":"GENEVA AVE","total":11,"fatal_crashes":0,"rank":3},
+{"hood":"Outer Mission","street":"SAN JOSE AVE","total":7,"fatal_crashes":0,"rank":4},
+{"hood":"Outer Mission","street":"LYELL ST","total":3,"fatal_crashes":0,"rank":5},
+{"hood":"Outer Richmond","street":"GEARY BLVD","total":11,"fatal_crashes":1,"rank":1},
+{"hood":"Outer Richmond","street":"PARK PRESIDIO BLVD","total":7,"fatal_crashes":0,"rank":2},
+{"hood":"Outer Richmond","street":"CLEMENT ST","total":7,"fatal_crashes":0,"rank":3},
+{"hood":"Outer Richmond","street":"BALBOA ST","total":4,"fatal_crashes":0,"rank":4},
+{"hood":"Outer Richmond","street":"POINT LOBOS AVE","total":4,"fatal_crashes":0,"rank":5},
+{"hood":"Russian Hill","street":"POLK ST","total":13,"fatal_crashes":0,"rank":1},
+{"hood":"Russian Hill","street":"VAN NESS AVE","total":12,"fatal_crashes":0,"rank":2},
+{"hood":"Russian Hill","street":"BAY ST","total":6,"fatal_crashes":0,"rank":3},
+{"hood":"Russian Hill","street":"LARKIN ST","total":5,"fatal_crashes":0,"rank":4},
+{"hood":"Russian Hill","street":"BEACH ST","total":4,"fatal_crashes":0,"rank":5},
+{"hood":"South of Market","street":"06TH ST","total":34,"fatal_crashes":2,"rank":1},
+{"hood":"South of Market","street":"MISSION ST","total":31,"fatal_crashes":0,"rank":2},
+{"hood":"South of Market","street":"MARKET ST","total":26,"fatal_crashes":1,"rank":3},
+{"hood":"South of Market","street":"08TH ST","total":20,"fatal_crashes":0,"rank":4},
+{"hood":"South of Market","street":"BRYANT ST","total":16,"fatal_crashes":0,"rank":5},
+{"hood":"Sunset/Parkside","street":"SUNSET BLVD","total":15,"fatal_crashes":0,"rank":1},
+{"hood":"Sunset/Parkside","street":"SLOAT BLVD","total":8,"fatal_crashes":0,"rank":2},
+{"hood":"Sunset/Parkside","street":"NORIEGA ST","total":7,"fatal_crashes":0,"rank":3},
+{"hood":"Sunset/Parkside","street":"19TH AVE","total":7,"fatal_crashes":0,"rank":4},
+{"hood":"Sunset/Parkside","street":"TARAVAL ST","total":6,"fatal_crashes":0,"rank":5},
+{"hood":"Tenderloin","street":"POLK ST","total":22,"fatal_crashes":0,"rank":1},
+{"hood":"Tenderloin","street":"HYDE ST","total":17,"fatal_crashes":0,"rank":2},
+{"hood":"Tenderloin","street":"OFARRELL ST","total":16,"fatal_crashes":0,"rank":3},
+{"hood":"Tenderloin","street":"LARKIN ST","total":16,"fatal_crashes":0,"rank":4},
+{"hood":"Tenderloin","street":"EDDY ST","total":14,"fatal_crashes":0,"rank":5},
+{"hood":"West of Twin Peaks","street":"19TH AVE","total":10,"fatal_crashes":0,"rank":1},
+{"hood":"West of Twin Peaks","street":"OCEAN AVE","total":8,"fatal_crashes":1,"rank":2},
+{"hood":"West of Twin Peaks","street":"PORTOLA DR","total":5,"fatal_crashes":0,"rank":3},
+{"hood":"West of Twin Peaks","street":"BOSWORTH ST","total":5,"fatal_crashes":0,"rank":4},
+{"hood":"West of Twin Peaks","street":"JUNIPERO SERRA BLVD","total":4,"fatal_crashes":0,"rank":5},
+{"hood":"Western Addition","street":"EDDY ST","total":11,"fatal_crashes":0,"rank":1},
+{"hood":"Western Addition","street":"FRANKLIN ST","total":9,"fatal_crashes":0,"rank":2},
+{"hood":"Western Addition","street":"VAN NESS AVE","total":9,"fatal_crashes":0,"rank":3},
+{"hood":"Western Addition","street":"GOUGH ST","total":7,"fatal_crashes":0,"rank":4},
+{"hood":"Western Addition","street":"TURK ST","total":7,"fatal_crashes":0,"rank":5}]
+;
+const HOOD_OVERVIEW =
+[{"hood":"Mission","crashes":392,"fatal":2},
+{"hood":"South of Market","crashes":280,"fatal":5},
+{"hood":"Bayview Hunters Point","crashes":212,"fatal":1},
+{"hood":"Tenderloin","crashes":197,"fatal":0},
+{"hood":"Financial District/South Beach","crashes":195,"fatal":0},
+{"hood":"Western Addition","crashes":100,"fatal":1},
+{"hood":"Sunset/Parkside","crashes":91,"fatal":1},
+{"hood":"Hayes Valley","crashes":91,"fatal":0},
+{"hood":"Bernal Heights","crashes":83,"fatal":1},
+{"hood":"Outer Mission","crashes":83,"fatal":2},
+{"hood":"Nob Hill","crashes":78,"fatal":1},
+{"hood":"West of Twin Peaks","crashes":69,"fatal":3},
+{"hood":"Marina","crashes":66,"fatal":0},
+{"hood":"Mission Bay","crashes":65,"fatal":0},
+{"hood":"Excelsior","crashes":64,"fatal":1},
+{"hood":"Golden Gate Park","crashes":62,"fatal":1},
+{"hood":"Chinatown","crashes":58,"fatal":0},
+{"hood":"Outer Richmond","crashes":57,"fatal":1},
+{"hood":"Russian Hill","crashes":57,"fatal":0},
+{"hood":"Castro/Upper Market","crashes":55,"fatal":0}]
+;
+
+const cellSize = 14;
+const cellGap = 2;
+const streetLabelWidth = 130;
+const yearLabelHeight = 22;
+const monthLabelHeight = 16;
+const streetCount = 5;
+const barGap = cellGap;
+const barMaxWidth = 140;
+const barHeight = cellSize;
+const blockHeight = yearLabelHeight + monthLabelHeight + streetCount * (cellSize + cellGap);
+const blockGap = 14;
+
+const prettyName = s => s
+  .replace(/^0+/, "")
+  .replace(" ST", " St").replace(" AVE", " Ave").replace(" BLVD", " Blvd");
+
+const tooltip = document.getElementById("tooltip");
+const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Parse weekly
+WEEKLY.forEach(d => {
+  d.week = new Date(d.week + "T00:00:00");
+  d.crashes = +d.crashes;
+  d.rank = +d.rank;
+  d.has_fatal = +d.has_fatal;
+  d.deaths = +d.deaths;
+});
+
+// Lookups
+const lookup = new Map();
+WEEKLY.forEach(d => {
+  const key = `${d.hood}|${d.street}|${d.week.toISOString()}`;
+  lookup.set(key, { crashes: d.crashes, has_fatal: d.has_fatal, deaths: d.deaths });
+});
+
+const stTotalLookup = new Map();
+const stFatalLookup = new Map();
+let maxStreetTotal = 0;
+STREET_TOTALS.forEach(d => {
+  d.total = +d.total;
+  d.fatal_crashes = +d.fatal_crashes;
+  d.rank = +d.rank;
+  stTotalLookup.set(`${d.hood}|${d.street}`, d.total);
+  stFatalLookup.set(`${d.hood}|${d.street}`, d.fatal_crashes);
+  if (d.total > maxStreetTotal) maxStreetTotal = d.total;
+});
+
+// Hood streets map
+const hoodStreets = new Map();
+STREET_TOTALS.forEach(d => {
+  if (!hoodStreets.has(d.hood)) hoodStreets.set(d.hood, []);
+  const arr = hoodStreets.get(d.hood);
+  if (arr.length < 5) arr.push(d.street);
+});
+
+HOOD_OVERVIEW.forEach(d => { d.crashes = +d.crashes; d.fatal = +d.fatal; });
+const hoodOrder = HOOD_OVERVIEW.map(d => d.hood);
+
+const maxCrashes = d3.max(WEEKLY, d => d.crashes);
+const colorScale = d3.scaleSequential()
+  .domain([0, maxCrashes])
+  .interpolator(t => d3.interpolateRgb("#f0f0f0", "#a4133c")(Math.pow(t, 0.55)));
+
+const barScale = d3.scaleLinear()
+  .domain([0, maxStreetTotal])
+  .range([0, barMaxWidth]);
+
+// Legend
+const legendCanvas = document.getElementById("legendBar");
+const lctx = legendCanvas.getContext("2d");
+for (let i = 0; i < 180; i++) {
+  lctx.fillStyle = colorScale(i / 180 * maxCrashes);
+  lctx.fillRect(i, 0, 1, 10);
+}
+document.getElementById("legendMax").textContent = maxCrashes;
+
+// --- Overview bar chart ---
+{
+  const bw = 36, bpad = 4, oh = 80, omx = 10, omy = 14;
+  const ow = omx * 2 + hoodOrder.length * (bw + bpad);
+  const maxHood = d3.max(HOOD_OVERVIEW, d => d.crashes);
+  const by = d3.scaleLinear().domain([0, maxHood]).range([oh - omy, 6]);
+
+  const svg = d3.select("#overview").append("svg").attr("width", ow).attr("height", oh + 14);
+
+  HOOD_OVERVIEW.forEach((d, i) => {
+    const bx = omx + i * (bw + bpad);
+    const barH = oh - omy - by(d.crashes);
+
+    svg.append("rect")
+      .attr("class", "ov-bar")
+      .attr("x", bx)
+      .attr("y", by(d.crashes))
+      .attr("width", bw)
+      .attr("height", barH)
+      .attr("fill", "#e8c4c4")
+      .attr("rx", 2)
+      .on("mouseover", () => {
+        tooltip.style.display = "block";
+        tooltip.querySelector(".tt-street").textContent = d.hood;
+        tooltip.querySelector(".tt-week").textContent = "2025 total";
+        tooltip.querySelector(".tt-crashes").innerHTML = `<span class="tt-count">${d.crashes}</span> crashes` + (d.fatal > 0 ? ` · <span class="tt-fatal">💀 ${d.fatal} fatal</span>` : "");
+      })
+      .on("mousemove", (e) => {
+        tooltip.style.left = (e.clientX + 14) + "px";
+        tooltip.style.top = (e.clientY - 10) + "px";
+      })
+      .on("mouseout", () => { tooltip.style.display = "none"; })
+      .on("click", () => {
+        const el = document.querySelector(`[data-hood="${d.hood}"]`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
+    // Rotated label
+    svg.append("text")
+      .attr("class", "ov-label")
+      .attr("x", bx + bw / 2)
+      .attr("y", oh + 10)
+      .attr("text-anchor", "middle")
+      .text(d.hood.slice(0, 3));
+  });
+}
+
+// --- Main heatmap ---
+const container = document.getElementById("chart");
+const year = 2025;
+const yearStart = new Date(year, 0, 1);
+const yearEnd = new Date(year + 1, 0, 1);
+const allWeeks = d3.timeMondays(d3.timeMonday.floor(yearStart), yearEnd)
+  .filter(w => w.getFullYear() <= year);
+const numWeeks = allWeeks.length;
+
+const heatmapEnd = streetLabelWidth + numWeeks * (cellSize + cellGap);
+const svgWidth = heatmapEnd + barGap + barMaxWidth + 40;
+const svgHeight = hoodOrder.length * (blockHeight + blockGap);
+
+const svg = d3.select(container)
+  .append("svg")
+  .attr("width", svgWidth)
+  .attr("height", svgHeight)
+  .attr("style", "max-width: 100%; height: auto;");
+
+hoodOrder.forEach((hood, hi) => {
+  const yOff = hi * (blockHeight + blockGap);
+  const streets = hoodStreets.get(hood) || [];
+  const hoodData = HOOD_OVERVIEW.find(d => d.hood === hood);
+  const hoodTotal = hoodData ? hoodData.crashes : 0;
+  const hoodFatal = hoodData ? hoodData.fatal : 0;
+
+  const g = svg.append("g")
+    .attr("transform", `translate(0, ${yOff})`)
+    .attr("data-hood", hood);
+
+  // Hood label
+  g.append("text")
+    .attr("class", "hood-label")
+    .attr("x", 0)
+    .attr("y", 16)
+    .text(hood);
+
+  g.append("text")
+    .attr("class", "hood-total")
+    .attr("x", hood.length * 8.5 + 8)
+    .attr("y", 16)
+    .html(`— ${hoodTotal} crashes` + (hoodFatal > 0 ? `, ${hoodFatal} fatal` : ""));
+
+  // Month labels
+  d3.timeMonths(new Date(year, 0, 1), new Date(year + 1, 0, 1)).forEach(ms => {
+    const idx = allWeeks.findIndex(w => w <= ms && d3.timeMonday.offset(w, 1) > ms);
+    const finalIdx = idx >= 0 ? idx : allWeeks.findIndex(w => w >= ms);
+    if (finalIdx >= 0) {
+      g.append("text")
+        .attr("class", "month-label")
+        .attr("x", streetLabelWidth + finalIdx * (cellSize + cellGap))
+        .attr("y", yearLabelHeight + 12)
+        .text(monthNames[ms.getMonth()]);
+    }
+  });
+
+  // Streets
+  streets.forEach((street, si) => {
+    const cy = yearLabelHeight + monthLabelHeight + si * (cellSize + cellGap);
+
+    g.append("text")
+      .attr("class", "street-label")
+      .attr("x", streetLabelWidth - 6)
+      .attr("y", cy + cellSize - 2)
+      .attr("text-anchor", "end")
+      .text(prettyName(street));
+
+    // Heatmap cells
+    allWeeks.forEach((w, wi) => {
+      const key = `${hood}|${street}|${d3.timeMonday.floor(w).toISOString()}`;
+      const info = lookup.get(key) || { crashes: 0, has_fatal: 0, deaths: 0 };
+      const cx = streetLabelWidth + wi * (cellSize + cellGap);
+
+      g.append("rect")
+        .attr("class", "cell")
+        .attr("x", cx)
+        .attr("y", cy)
+        .attr("width", cellSize)
+        .attr("height", cellSize)
+        .attr("fill", info.crashes === 0 ? "#f5f5f5" : colorScale(info.crashes))
+        .attr("rx", 1.5)
+        .attr("stroke", "none")
+        .on("mouseover", () => {
+          const weekEnd = new Date(w);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          const fmt = d3.timeFormat("%b %d");
+          tooltip.style.display = "block";
+          tooltip.querySelector(".tt-street").textContent = `${prettyName(street)} · ${hood}`;
+          tooltip.querySelector(".tt-week").textContent = `${fmt(w)} – ${fmt(weekEnd)}, 2025`;
+          let html = `<span class="tt-count">${info.crashes}</span> crash${info.crashes !== 1 ? "es" : ""}`;
+          if (info.has_fatal) html += ` · <span class="tt-fatal">💀 ${info.deaths} death${info.deaths !== 1 ? "s" : ""}</span>`;
+          tooltip.querySelector(".tt-crashes").innerHTML = html;
+        })
+        .on("mousemove", (e) => {
+          tooltip.style.left = (e.clientX + 14) + "px";
+          tooltip.style.top = (e.clientY - 10) + "px";
+        })
+        .on("mouseout", () => { tooltip.style.display = "none"; });
+
+      if (info.has_fatal) {
+        g.append("text")
+          .attr("class", "skull")
+          .attr("x", cx + cellSize / 2)
+          .attr("y", cy + cellSize / 2)
+          .text("💀");
+      }
+    });
+
+    // Bar chart
+    const streetTotal = stTotalLookup.get(`${hood}|${street}`) || 0;
+    const streetFatal = stFatalLookup.get(`${hood}|${street}`) || 0;
+    const streetInjury = streetTotal - streetFatal;
+    const barX = streetLabelWidth + allWeeks.length * (cellSize + cellGap) + cellGap;
+    const barWInjury = barScale(streetInjury);
+    const barWFatal = barScale(streetFatal);
+
+    const barTooltip = () => {
+      tooltip.style.display = "block";
+      tooltip.querySelector(".tt-street").textContent = `${prettyName(street)} · ${hood}`;
+      tooltip.querySelector(".tt-week").textContent = "2025 yearly total";
+      let html = `<span class="tt-count">${streetInjury}</span> injury crash${streetInjury !== 1 ? "es" : ""}`;
+      if (streetFatal > 0) html += ` · <span class="tt-fatal">💀 ${streetFatal} fatal</span>`;
+      html += ` · <strong>${streetTotal}</strong> total`;
+      tooltip.querySelector(".tt-crashes").innerHTML = html;
+    };
+    const barMove = (e) => {
+      tooltip.style.left = (e.clientX + 14) + "px";
+      tooltip.style.top = (e.clientY - 10) + "px";
+    };
+    const barOut = () => { tooltip.style.display = "none"; };
+
+    g.append("rect")
+      .attr("class", "bar-injury")
+      .attr("x", barX)
+      .attr("y", cy)
+      .attr("width", barWInjury)
+      .attr("height", barHeight)
+      .attr("rx", barWFatal > 0 ? 0 : 1.5)
+      .style("cursor", "default")
+      .on("mouseover", barTooltip)
+      .on("mousemove", barMove)
+      .on("mouseout", barOut);
+
+    if (barWFatal > 0) {
+      g.append("rect")
+        .attr("class", "bar-fatal")
+        .attr("x", barX + barWInjury)
+        .attr("y", cy)
+        .attr("width", Math.max(barWFatal, 2))
+        .attr("height", barHeight)
+        .attr("rx", 1.5)
+        .style("cursor", "default")
+        .on("mouseover", barTooltip)
+        .on("mousemove", barMove)
+        .on("mouseout", barOut);
+    }
+
+    const totalBarW = barWInjury + Math.max(barWFatal, streetFatal > 0 ? 2 : 0);
+    g.append("text")
+      .attr("class", "bar-label")
+      .attr("x", barX + totalBarW + 4)
+      .attr("y", cy + cellSize - 2)
+      .text(streetTotal);
+  });
+
+  // Month separators
+  d3.timeMonths(new Date(year, 1, 1), new Date(year + 1, 0, 1)).forEach(ms => {
+    const idx = allWeeks.findIndex(w => w <= ms && d3.timeMonday.offset(w, 1) > ms);
+    const finalIdx = idx >= 0 ? idx : allWeeks.findIndex(w => w >= ms);
+    if (finalIdx >= 0) {
+      const x = streetLabelWidth + finalIdx * (cellSize + cellGap) - cellGap / 2;
+      g.append("line")
+        .attr("x1", x).attr("x2", x)
+        .attr("y1", yearLabelHeight + monthLabelHeight - 2)
+        .attr("y2", yearLabelHeight + monthLabelHeight + streetCount * (cellSize + cellGap))
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 2);
+    }
+  });
+});
+
+</script>
+</body>
+</html>
