@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bay Area Open Data Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fff;
+    color: #333;
+    padding: 48px 40px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 6px;
+  }
+  .intro {
+    font-size: 15px;
+    color: #777;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 620px;
+  }
+  .intro a {
+    color: #555;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .card {
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 28px 32px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .card:hover {
+    border-color: #ccc;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .card h2 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #111;
+  }
+  .card .tag {
+    font-size: 11px;
+    color: #999;
+    background: #f5f5f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .card p {
+    font-size: 13px;
+    color: #777;
+    line-height: 1.5;
+  }
+  .card .stats {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #aaa;
+  }
+  .card .stats span {
+    margin-right: 14px;
+  }
+  footer {
+    margin-top: 60px;
+    font-size: 12px;
+    color: #bbb;
+  }
+  footer a { color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>Bay Area Open Data Visualizations</h1>
+<p class="intro">
+  I'm learning data visualization by exploring publicly available city government datasets — crime reports, traffic crashes, and more from SF and Oakland. Each project is a self-contained interactive chart built with D3.js. All data comes from <a href="https://datasf.org/">DataSF</a> and <a href="https://data.oaklandca.gov/">Oakland Open Data</a>.
+</p>
+
+<div class="grid">
+
+  <a class="card" href="sf-crashes/index.html">
+    <div class="card-header">
+      <h2>🚗 SF Traffic Crashes — Top 10 Streets</h2>
+      <span class="tag">San Francisco</span>
+      <span class="tag">2005–2025</span>
+    </div>
+    <p>
+      Calendar-style heatmap showing weekly injury crash counts on San Francisco's most dangerous streets, year by year. Each year displays its own top 10 streets ranked by total crashes, with 💀 skull markers for weeks with fatalities and stacked bar charts showing injury vs. fatal crash totals.
+    </p>
+    <div class="stats">
+      <span>64,409 crashes</span>
+      <span>135,617 party records</span>
+      <span>611 fatal crashes</span>
+      <span>21 years</span>
+    </div>
+  </a>
+
+  <a class="card" href="sf-crime-heatmap/crime_heatmap.html">
+    <div class="card-header">
+      <h2>🔴 SF Crime Heatmap 2025</h2>
+      <span class="tag">San Francisco</span>
+      <span class="tag">2025</span>
+    </div>
+    <p>
+      Weekly crime incident heatmap across 41 San Francisco neighborhoods. Color intensity shows incident volume per week — from larceny and assault to drug offenses. Tenderloin and South of Market consistently lead.
+    </p>
+    <div class="stats">
+      <span>89,954 incidents</span>
+      <span>41 neighborhoods</span>
+      <span>52 weeks</span>
+    </div>
+  </a>
+
+  <a class="card" href="oakland-crime-heatmap/crime_heatmap.html">
+    <div class="card-header">
+      <h2>🟠 Oakland Crime Heatmap 2025</h2>
+      <span class="tag">Oakland</span>
+      <span class="tag">2025</span>
+    </div>
+    <p>
+      Same concept, across the bay. Weekly crime incidents by Oakland police beat, revealing geographic and seasonal patterns in reported crime.
+    </p>
+    <div class="stats">
+      <span>Oakland Police beats</span>
+      <span>52 weeks</span>
+    </div>
+  </a>
+
+</div>
+
+<footer>
+  Built by <a href="https://github.com/jestrada">Joseph Estrada</a> · Data from <a href="https://datasf.org/">DataSF</a> & <a href="https://data.oaklandca.gov/">Oakland Open Data</a>
+</footer>
+
+</body>
+</html>
