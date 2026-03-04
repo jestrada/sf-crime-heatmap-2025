@@ -90,6 +90,17 @@
     dominant-baseline: central;
     pointer-events: none;
   }
+  #overview {
+    margin-bottom: 20px;
+  }
+  .ov-year {
+    font-size: 8px;
+    fill: #ccc;
+    text-anchor: middle;
+  }
+  .ov-dot {
+    cursor: pointer;
+  }
   #tooltip {
     position: fixed;
     background: #fff;
@@ -113,6 +124,8 @@
 
 <h1>SF Traffic Crashes — Top 10 Streets by Year</h1>
 <p class="subtitle">Weekly injury crash counts. Each year shows that year's 10 most dangerous streets, ranked by total crashes.</p>
+
+<div id="overview"></div>
 
 <div class="legend">
   <div class="legend-group">
@@ -143,6 +156,56 @@
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
+// --- Overview sparkline ---
+const YEARLY = [{"year":2005,"crashes":3253,"fatal":26},{"year":2006,"crashes":2896,"fatal":27},{"year":2007,"crashes":3065,"fatal":41},{"year":2008,"crashes":3039,"fatal":27},{"year":2009,"crashes":2900,"fatal":31},{"year":2010,"crashes":3095,"fatal":21},{"year":2011,"crashes":3097,"fatal":28},{"year":2012,"crashes":3269,"fatal":29},{"year":2013,"crashes":3069,"fatal":33},{"year":2014,"crashes":2965,"fatal":31},{"year":2015,"crashes":3054,"fatal":31},{"year":2016,"crashes":3323,"fatal":29},{"year":2017,"crashes":3427,"fatal":20},{"year":2018,"crashes":3301,"fatal":23},{"year":2019,"crashes":3481,"fatal":28},{"year":2020,"crashes":2451,"fatal":28},{"year":2021,"crashes":2757,"fatal":27},{"year":2022,"crashes":2879,"fatal":38},{"year":2023,"crashes":2925,"fatal":26},{"year":2024,"crashes":3008,"fatal":39},{"year":2025,"crashes":2932,"fatal":27}];
+
+{
+  const w = 700, h = 44, mx = 28, my = 6;
+  const x = d3.scaleLinear().domain([2005, 2025]).range([mx, w - mx]);
+  const y = d3.scaleLinear().domain([0, d3.max(YEARLY, d => d.crashes)]).range([h - my, my]);
+  const line = d3.line().x(d => x(d.year)).y(d => y(d.crashes)).curve(d3.curveMonotoneX);
+
+  const svg = d3.select("#overview").append("svg").attr("width", w).attr("height", h);
+
+  svg.append("path")
+    .datum(YEARLY)
+    .attr("d", line)
+    .attr("fill", "none")
+    .attr("stroke", "#dcc")
+    .attr("stroke-width", 1.5);
+
+  svg.selectAll(".ov-dot")
+    .data(YEARLY)
+    .join("circle")
+    .attr("class", "ov-dot")
+    .attr("cx", d => x(d.year))
+    .attr("cy", d => y(d.crashes))
+    .attr("r", 3)
+    .attr("fill", "#e8c4c4")
+    .attr("stroke", "#a4133c")
+    .attr("stroke-width", 0.8)
+    .on("mouseover", (e, d) => {
+      tooltip.style.display = "block";
+      tooltip.querySelector(".tt-street").textContent = d.year;
+      tooltip.querySelector(".tt-week").textContent = "";
+      tooltip.querySelector(".tt-crashes").innerHTML = `<span class="tt-count">${d.crashes.toLocaleString()}</span> crashes · <span class="tt-fatal">💀 ${d.fatal} fatal</span>`;
+    })
+    .on("mousemove", (e) => {
+      tooltip.style.left = (e.clientX + 14) + "px";
+      tooltip.style.top = (e.clientY - 10) + "px";
+    })
+    .on("mouseout", () => { tooltip.style.display = "none"; })
+    .on("click", (e, d) => {
+      const el = document.querySelector(`[data-year="${d.year}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+  // Year labels — every 5 years + endpoints
+  [2005, 2010, 2015, 2020, 2025].forEach(yr => {
+    svg.append("text").attr("class", "ov-year").attr("x", x(yr)).attr("y", h).text(yr);
+  });
+}
+
 const DATA =
 [{"street":"MISSION ST","rank":1,"year":2025,"week":"2024-12-30","crashes":1,"has_fatal":0,"deaths":0},
 {"street":"MISSION ST","rank":1,"year":2025,"week":"2025-01-06","crashes":2,"has_fatal":0,"deaths":0},
@@ -7854,7 +7917,8 @@ allYears.forEach((year, yi) => {
     .filter(w => w.getFullYear() <= year);
 
   const g = svg.append("g")
-    .attr("transform", `translate(0, ${yOff})`);
+    .attr("transform", `translate(0, ${yOff})`)
+    .attr("data-year", year);
 
   // Year label + total
   const yt = yearTotals.get(year) || 0;
